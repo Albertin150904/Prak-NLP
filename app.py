@@ -1,41 +1,37 @@
 import streamlit as st
-import nltk
-from nltk.tokenize import word_tokenize
-from nltk.corpus import stopwords
-import string
+import requests
+from bs4 import BeautifulSoup
 
-# Download NLTK data
-nltk.download('punkt')
-nltk.download('stopwords')
+# Fungsi untuk melakukan web scraping
+def scrape_website(url):
+    try:
+        response = requests.get(url)
+        response.raise_for_status()  # Memastikan tidak ada kesalahan dalam permintaan HTTP
+        soup = BeautifulSoup(response.text, 'html.parser')
+        
+        # Contoh sederhana: Mengambil semua teks dalam tag <p>
+        paragraphs = soup.find_all('p')
+        content = [p.get_text() for p in paragraphs]
+        
+        return content
+    except requests.exceptions.RequestException as e:
+        return f"Error: {e}"
 
-# Function to preprocess text
-def preprocess_text(text):
-    # Convert to lowercase
-    text = text.lower()
+# Fungsi utama Streamlit
+def main():
+    st.title("Web Scraping App")
+    st.write("Masukkan URL untuk melakukan scraping:")
     
-    # Remove punctuation
-    text = text.translate(str.maketrans('', '', string.punctuation))
+    url = st.text_input("URL", "https://www.example.com")
     
-    # Tokenize text
-    tokens = word_tokenize(text)
-    
-    # Remove stopwords
-    stop_words = set(stopwords.words('english'))
-    tokens = [word for word in tokens if word not in stop_words]
-    
-    return ' '.join(tokens)
+    if st.button("Scrape"):
+        with st.spinner('Scraping...'):
+            data = scrape_website(url)
+            if isinstance(data, list):
+                for paragraph in data:
+                    st.write(paragraph)
+            else:
+                st.error(data)
 
-# Streamlit app
-st.title("Text Preprocessing App")
-
-st.write("Enter the text you want to preprocess:")
-
-user_input = st.text_area("Input Text")
-
-if st.button("Preprocess"):
-    if user_input:
-        processed_text = preprocess_text(user_input)
-        st.write("Processed Text:")
-        st.write(processed_text)
-    else:
-        st.write("Please enter some text to preprocess.")
+if __name__ == "__main__":
+    main()
