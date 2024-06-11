@@ -1,42 +1,41 @@
 import streamlit as st
-from google.oauth2 import service_account
-from google.cloud import dialogflow_v2 as dialogflow
+import nltk
+from nltk.tokenize import word_tokenize
+from nltk.corpus import stopwords
+import string
 
-# Fungsi untuk menginisialisasi Dialogflow
-@st.cache_resource
-def initialize_dialogflow():
-    st.write("Initializing Dialogflow...")
-    credentials = service_account.Credentials.from_service_account_file("path/to/your/service-account-file.json")
-    session_client = dialogflow.SessionsClient(credentials=credentials)
-    session = session_client.session_path("your-project-id", "unique-session-id")
-    return session_client, session
+# Download NLTK data
+nltk.download('punkt')
+nltk.download('stopwords')
 
-# Fungsi untuk mengirim teks ke Dialogflow dan mendapatkan respons
-def detect_intent_texts(session_client, session, text, language_code='en'):
-    st.write(f"Sending text to Dialogflow: {text}")
-    text_input = dialogflow.types.TextInput(text=text, language_code=language_code)
-    query_input = dialogflow.types.QueryInput(text=text_input)
-    response = session_client.detect_intent(session=session, query_input=query_input)
-    return response.query_result
+# Function to preprocess text
+def preprocess_text(text):
+    # Convert to lowercase
+    text = text.lower()
+    
+    # Remove punctuation
+    text = text.translate(str.maketrans('', '', string.punctuation))
+    
+    # Tokenize text
+    tokens = word_tokenize(text)
+    
+    # Remove stopwords
+    stop_words = set(stopwords.words('english'))
+    tokens = [word for word in tokens if word not in stop_words]
+    
+    return ' '.join(tokens)
 
-# Inisialisasi sesi Dialogflow
-try:
-    session_client, session = initialize_dialogflow()
-    st.write("Dialogflow initialized successfully.")
-except Exception as e:
-    st.write(f"Error initializing Dialogflow: {e}")
+# Streamlit app
+st.title("Text Preprocessing App")
 
-# Inisialisasi Streamlit
-st.title("Dialogflow Chatbot with Streamlit")
-st.write("Type a message and press Enter to chat with the bot:")
+st.write("Enter the text you want to preprocess:")
 
-# Input pengguna
-user_input = st.text_input("You:", "")
+user_input = st.text_area("Input Text")
 
-if user_input:
-    try:
-        # Mendapatkan respons dari Dialogflow
-        response = detect_intent_texts(session_client, session, user_input)
-        st.write("Bot: ", response.fulfillment_text)
-    except Exception as e:
-        st.write(f"Error communicating with Dialogflow: {e}")
+if st.button("Preprocess"):
+    if user_input:
+        processed_text = preprocess_text(user_input)
+        st.write("Processed Text:")
+        st.write(processed_text)
+    else:
+        st.write("Please enter some text to preprocess.")
