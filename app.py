@@ -1,46 +1,47 @@
 import streamlit as st
-from nltk.tokenize import word_tokenize
-from nltk.stem import PorterStemmer
-from textblob import TextBlob
-import nltk
+import id_spacy
+from sklearn.feature_extraction.text import CountVectorizer
+from sklearn.linear_model import LogisticRegression
 
-# Download necessary NLTK data files
-nltk.download('punkt')
+# Load the pre-trained NER model
+nlp = id_spacy.load()
 
-# Initialize the PorterStemmer
-stemmer = PorterStemmer()
+# Function to predict sentiment
+def predict_sentiment(text):
+    # Process the text data with the NER model and extract named entities
+    doc = nlp(text)
+    named_entities = [ent.text for ent in doc.ents]
+    named_entities_data = ' '.join(named_entities)
+    
+    # Transform named entities into features
+    X = vectorizer.transform([named_entities_data])
+    
+    # Predict sentiment label
+    prediction = lr.predict(X)
+    return prediction[0]
 
-# Title of the application
-st.title("Aplikasi NLP Sederhana")
+# Main function for Streamlit app
+def main():
+    st.title("Analisis Sentimen dengan NER (Named Entity Recognition)")
+    
+    # Text input for user to input new text data
+    user_input = st.text_area("Masukkan teks untuk analisis sentimen:")
+    
+    if st.button("Prediksi Sentimen"):
+        if user_input.strip() == "":
+            st.error("Mohon masukkan teks untuk dilakukan analisis sentimen.")
+        else:
+            # Predict sentiment
+            sentiment = predict_sentiment(user_input)
+            st.success("Sentimen: {}".format(sentiment))
 
-# Sidebar options
-st.sidebar.header("Pilih Fungsi NLP")
-options = st.sidebar.radio("Fungsi:", ("Tokenisasi", "Stemming", "Analisis Sentimen"))
-
-# Input text from user
-text_input = st.text_area("Masukkan teks di sini:", "")
-
-if text_input:
-    if options == "Tokenisasi":
-        # Tokenization
-        tokens = word_tokenize(text_input)
-        st.write("Hasil Tokenisasi:")
-        st.write(tokens)
-
-    elif options == "Stemming":
-        # Stemming
-        tokens = word_tokenize(text_input)
-        stemmed_tokens = [stemmer.stem(token) for token in tokens]
-        st.write("Hasil Stemming:")
-        st.write(stemmed_tokens)
-
-    elif options == "Analisis Sentimen":
-        # Sentiment Analysis
-        blob = TextBlob(text_input)
-        sentiment = blob.sentiment
-        st.write("Hasil Analisis Sentimen:")
-        st.write(f"Polarity: {sentiment.polarity}")
-        st.write(f"Subjectivity: {sentiment.subjectivity}")
-
-# Footer
-st.sidebar.markdown("Dibuat dengan ❤️ menggunakan Streamlit")
+if __name__ == "__main__":
+    # Load the trained logistic regression model and count vectorizer
+    vectorizer = CountVectorizer()
+    vectorizer.fit(named_entities_data)
+    
+    lr = LogisticRegression()
+    lr.fit(X, sentiment_labels)
+    
+    # Run the Streamlit app
+    main()
